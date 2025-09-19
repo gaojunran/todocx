@@ -3,6 +3,7 @@ import * as fs from "fs";
 import * as path from "node:path";
 import { unified } from "unified";
 import markdown from "remark-parse";
+import gfm from "remark-gfm";
 import docx, { type DocxOptions } from "remark-docx";
 import clipboard from "clipboardy";
 import open from "open";
@@ -47,12 +48,12 @@ if (inputFile) {
   }
 }
 
-const processor = unified().use(markdown).use(docx, { output: "buffer" } as DocxOptions);
+const processor = unified().use(markdown).use(gfm).use(docx, { output: "buffer" } as DocxOptions);
 
 (async () => {
   try {
     const doc = await processor.process(markdownText);
-    const buffer = doc.result as Buffer;
+    const buffer = await doc.result as Buffer;
     fs.writeFileSync(outputFile, buffer);
 
     console.log(`Word file generated: ${outputFile}`);

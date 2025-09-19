@@ -1,12 +1,13 @@
 {
   "name": "todocx",
-  "version": "1.0.1",
+  "version": "1.1.0",
   "description": "A handy tool to convert Markdown to docx and open it.",
   "dependencies": {
     "clipboardy": "^4.0.0",
     "commander": "^14.0.1",
     "open": "^10.2.0",
     "remark-docx": "^0.1.8",
+    "remark-gfm": "^4.0.1",
     "remark-parse": "^11.0.0"
   },
   "bin": {
