@@ -1,0 +1,5 @@
+[tools]
+bun = "latest"
+
+[tasks.build]
+run = "bun build index.ts --outdir dist --target node"
