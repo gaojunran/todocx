@@ -1,101 +1,69 @@
 #!/usr/bin/env bun
-import * as fs from "fs";
-import * as path from "node:path";
-import { unified } from "unified";
-import docx, { type DocxOptions } from "remark-docx";
+
+import { $ } from "bun";
 import clipboard from "clipboardy";
 import open from "open";
-import { Command } from "commander";
-import remarkGfm from "remark-gfm";
-import remarkParse from "remark-parse";
-import remarkRehype from "remark-rehype";
-import rehypeMermaid from "rehype-mermaid";
-import rehypeRemark from "rehype-remark";
-import sizeOf from "image-size";
+import path from "node:path";
 
-const program = new Command();
-
-function randomId(length: number = 6) {
-	const chars =
-		"abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
-	let result = "";
-	for (let i = 0; i < length; i++) {
-		result += chars[Math.floor(Math.random() * chars.length)];
-	}
-	return result;
+// 生成随机文件名后缀
+function randomId(length: number = 6): string {
+  const chars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+  let result = "";
+  for (let i = 0; i < length; i++) {
+    result += chars[Math.floor(Math.random() * chars.length)];
+  }
+  return result;
 }
 
-program
-	.name("todocx")
-	.description("Convert Markdown to DOCX")
-	.option(
-		"-i, --input <file>",
-		"Input markdown file. If omitted, read from clipboard",
-	)
-	.option("-o, --output <file>", "Output DOCX file")
-	.parse(process.argv);
-
-const options = program.opts<{ input?: string; output?: string }>();
-
-let inputFile = options.input;
-let outputFile = options.output ?? `output-${randomId()}.docx`;
-
-let markdownText: string;
-
-if (inputFile) {
-	if (!fs.existsSync(inputFile)) {
-		console.error(`Input file does not exist: ${inputFile}`);
-		process.exit(1);
-	}
-	markdownText = fs.readFileSync(inputFile, "utf-8");
-} else {
-	markdownText = clipboard.readSync();
-	if (!markdownText) {
-		console.error("Clipboard is empty and no input file provided.");
-		process.exit(1);
-	}
+// 检查系统中是否安装了 Pandoc
+async function isPandocInstalled(): Promise<boolean> {
+  try {
+    await $`pandoc --version`.quiet();
+    return true;
+  } catch {
+    return false;
+  }
 }
 
-const processor = unified()
-	.use(remarkParse)
-  .use(remarkGfm)
-	.use(remarkRehype)
-	.use(rehypeMermaid, {
-		strategy: "img-png",
-	})
-	.use(rehypeRemark)
-	.use(docx, {
-		output: "buffer",
-		imageResolver: (src: string) => {
-			if (src.startsWith("data:image/png;base64,")) {
-				const base64 = src.replace("data:image/png;base64,", "");
-				const imageBuffer = Buffer.from(base64, "base64");
-				const dimensions = sizeOf(imageBuffer); // { width, height }
-				return {
-					image: imageBuffer,
-					width: dimensions.width ?? 800,
-					height: dimensions.height ?? 600,
-				};
-			}
-			return {
-				image: new Uint8Array(),
-				width: 1000,
-				height: 600,
-			};
-		},
-	} as unknown as DocxOptions);
+// 获取输入的 Markdown 内容
+async function getInputContent(inputFile?: string): Promise<string> {
+  if (inputFile) {
+    return await $`cat ${inputFile}`.text();
+  } else {
+    const clipboardContent = clipboard.readSync();
+    if (!clipboardContent) {
+      throw new Error("Clipboard is empty and no input file provided.");
+    }
+    return clipboardContent;
+  }
+}
 
-(async () => {
-	try {
-		const doc = await processor.process(markdownText);
-		const buffer = (await doc.result) as Buffer;
-		fs.writeFileSync(outputFile, buffer);
+async function main() {
+  const inputFile = process.argv[2];
+  const outputFile = process.argv[3] ?? `output-${randomId()}.docx`;
 
-		console.log(`Word file generated: ${outputFile}`);
+  // 检查是否安装了 Pandoc
+  if (!(await isPandocInstalled())) {
+    console.error("Pandoc is not installed. Please install Pandoc first.");
+    process.exit(1);
+  }
 
-		await open(path.resolve(outputFile));
-	} catch (err) {
-		console.error("Error processing markdown:", err);
-		process.exit(1);
-	}
-})();
+  try {
+    const markdownText = await getInputContent(inputFile);
+
+    // 将 Markdown 内容保存到临时文件
+    const tempInputFile = path.join(__dirname, `temp-${randomId()}.md`);
+    await $`echo ${markdownText} > ${tempInputFile}`;
+
+    // 调用 Pandoc 进行转换
+    await $`pandoc ${tempInputFile} -o ${outputFile}`;
+
+    console.log(`Word file generated: ${outputFile}`);
+    open(path.resolve(outputFile));
+  } catch (err) {
+    console.error("Error processing markdown:", err);
+    process.exit(1);
+  }
+}
+
+main();

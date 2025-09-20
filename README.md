@@ -6,10 +6,11 @@ It can be used often when you have to use LLM to finish a Word report.
 
 ## Installation
 
-### Using [bun](https://bun.sh/) (currently the only way)
+### Using [bun](https://bun.sh/)
 
-```shs
+```sh
 bun i -g todocx
+bun pm trust -g todocx  # to run script to install pandoc
 ```
 
 You may need to add bun's global bin folder to PATH.
@@ -22,13 +23,8 @@ Copy markdown content to clipboard -> Run `todocx` -> The converted docx file wi
 
 ### Specify an input file
 
-Run `todocx -i input.md` -> The converted docx file with a random name will be opened.
+Run `todocx input.md` -> The converted docx file with a random name will be opened.
 
 ### Specify an output name
 
-Run `todocx -i input.md -o output.docx` -> The converted docx file with the specified name will be opened.
-
-## Features
-
-- ✨ Supports markdown syntax and [GFM](https://github.github.com/gfm/) syntax.
-- ✨ Supports Mermaid diagrams (Auto-detected picture width and height!).
+Run `todocx input.md output.docx` -> The converted docx file with the specified name will be opened.
