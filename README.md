@@ -8,7 +8,7 @@ It can be used often when you have to use LLM to finish a Word report.
 
 ### Using [bun](https://bun.sh/) (currently the only way)
 
-```sh
+```shs
 bun i -g todocx
 ```
 
@@ -27,3 +27,8 @@ Run `todocx -i input.md` -> The converted docx file with a random name will be o
 ### Specify an output name
 
 Run `todocx -i input.md -o output.docx` -> The converted docx file with the specified name will be opened.
+
+## Features
+
+- ✨ Supports markdown syntax and [GFM](https://github.github.com/gfm/) syntax.
+- ✨ Supports Mermaid diagrams (Auto-detected picture width and height!).
